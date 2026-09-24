@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+.admin-panel-nav .list-group-item.active {
+    background: #009970;
+    border-color: #009970;
+    color: #fff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        <div class="col-xl-3">
+            <div class="card admin-panel-nav shadow-sm border-0 p-3">
+                <h5 class="fw-bold mb-1">Admin Console</h5>
+                <p class="text-muted">Manage users, riders, complaints and ride history.</p>
+                <div class="list-group">
+                    <a href="{% url 'admin_panel:dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{% url 'admin_panel:users' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'users' %}active{% endif %}">Users</a>
+                    <a href="{% url 'admin_panel:providers' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'providers' %}active{% endif %}">Service Providers</a>
+                    <a href="{% url 'admin_panel:emergency' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'emergency' %}active{% endif %}">Live Requests</a>
+                    <a href="{% url 'admin_panel:history' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'history' %}active{% endif %}">History (read only)</a>
+                    <a href="{% url 'admin_panel:complaints' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'complaints' or request.resolver_match.url_name == 'complaint_detail' %}active{% endif %}">Complaints</a>
+                    <a href="{% url 'admin_panel:contacts' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'contacts' %}active{% endif %}">Contacts</a>
+                    <a href="{% url 'admin_panel:logout' %}" class="list-group-item list-group-item-action text-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-9">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold">Welcome, {{ request.user.username }}</h2>
+                    <p class="text-muted">Admin can manage accounts, reply to complaints, and view ride history.</p>
+                    {% block admin_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block footer %}
+{% endblock footer %}

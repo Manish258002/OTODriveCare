@@ -1,0 +1,154 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<div class="row gy-4">
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Customers</h6>
+                    <h3 class="fw-bold">{{ total_users }}</h3>
+                </div>
+                <div class="fs-2 text-warning"><i class="fas fa-users"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Service Providers</h6>
+                    <h3 class="fw-bold">{{ total_providers }}</h3>
+                </div>
+                <div class="fs-2 text-info"><i class="fas fa-tools"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Emergency Requests</h6>
+                    <h3 class="fw-bold">{{ total_requests }}</h3>
+                    <span class="badge bg-warning text-dark">{{ pending_requests }} pending</span>
+                </div>
+                <div class="fs-2 text-danger"><i class="fas fa-map-marker-alt"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Feedback</h6>
+                    <h3 class="fw-bold">{{ total_reviews }}</h3>
+                </div>
+                <div class="fs-2 text-success"><i class="fas fa-star"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Unread Contacts</h6>
+                    <h3 class="fw-bold">{{ unread_contacts }}</h3>
+                </div>
+                <div class="fs-2 text-primary"><i class="fas fa-envelope-open-text"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <h6 class="text-uppercase text-muted mb-2">Open Complaints</h6>
+                    <h3 class="fw-bold">{{ open_complaints }}</h3>
+                </div>
+                <div class="fs-2 text-danger"><i class="fas fa-comment-dots"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row gy-4 mt-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0">Recent Emergencies</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for request in recent_requests %}
+                    <a href="{% url 'admin_panel:emergency_detail' request.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>#{{ request.pk }}</strong> {{ request.user.username }}
+                                <div class="small text-muted">{{ request.vehicle_type }} • {{ request.status }}</div>
+                            </div>
+                            <div class="badge bg-secondary">{{ request.request_time|date:'M d, H:i' }}</div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted">No emergency requests found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0">Recent Contacts</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for contact in recent_contacts %}
+                    <a href="{% url 'admin_panel:contact_detail' contact.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ contact.name }}</strong>
+                                <div class="small text-muted">{{ contact.email }}</div>
+                            </div>
+                            <div class="badge {% if not contact.is_read %}bg-warning text-dark{% else %}bg-success{% endif %}">{{ contact.created_at|date:'M d' }}</div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted">No contact submissions yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white border-0">
+        <h5 class="mb-0">Recent Customers</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Joined</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in recent_users %}
+                <tr>
+                    <td><a href="{% url 'admin_panel:user_detail' user.pk %}">{{ user.username }}</a></td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.phone|default:'-' }}</td>
+                    <td>{{ user.created_at|date:'M d, Y' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-muted">No customers yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

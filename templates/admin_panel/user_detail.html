@@ -1,0 +1,73 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-start mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1">{{ profile_user.username }}</h4>
+        <p class="text-muted mb-0">Customer details, request history and reviews.</p>
+    </div>
+    <div>
+        <a href="{% url 'admin_panel:user_toggle' profile_user.pk %}" class="btn btn-outline-{{ profile_user.is_active|yesno:'danger,success' }}">
+            {% if profile_user.is_active %}Deactivate{% else %}Activate{% endif %}
+        </a>
+    </div>
+</div>
+<div class="row gy-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-3">
+            <h6 class="text-muted">Profile</h6>
+            <p><strong>Email:</strong> {{ profile_user.email }}</p>
+            <p><strong>Phone:</strong> {{ profile_user.phone|default:'-' }}</p>
+            <p><strong>Created:</strong> {{ profile_user.created_at|date:'M d, Y H:i' }}</p>
+            <p><strong>Status:</strong> {% if profile_user.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}</p>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-3 mb-4">
+            <h6 class="mb-3">Emergency Requests</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Status</th>
+                            <th>Vehicle</th>
+                            <th>Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td><a href="{% url 'admin_panel:emergency_detail' req.pk %}">#{{ req.pk }}</a></td>
+                            <td>{{ req.status }}</td>
+                            <td>{{ req.vehicle_type }}</td>
+                            <td>{{ req.request_time|date:'M d, Y' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-muted">No requests found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm p-3">
+            <h6 class="mb-3">Reviews</h6>
+            <div class="list-group list-group-flush">
+                {% for review in reviews %}
+                <div class="list-group-item px-0 py-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="mb-1"><strong>{{ review.provider.shop_name }}</strong></div>
+                            <p class="mb-1 text-muted">{{ review.review|truncatewords:20 }}</p>
+                        </div>
+                        <span class="badge bg-warning text-dark">{{ review.rating }}★</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-muted">No reviews yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

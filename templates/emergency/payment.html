@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Payment - OTO Drive Care{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow p-4">
+                <h3 class="fw-bold text-center">Complete Payment</h3>
+                <p class="text-center text-muted">{{ req.get_service_type_display }} • ₹{{ req.total_fare }}</p>
+
+                {% if not show_qr %}
+                <form method="post" action="{% url 'emergency:confirm_payment' req.pk %}">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <button type="submit" name="payment_method" value="Cash" class="btn btn-success w-100 py-3 fw-bold">Cash</button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="submit" name="payment_method" value="Online" class="btn btn-outline-success w-100 py-3 fw-bold">Online</button>
+                        </div>
+                    </div>
+                </form>
+                {% else %}
+                <div class="text-center">
+                    <p>Scan this QR code to pay ₹{{ req.total_fare }}</p>
+                    <div id="paymentQr" class="d-flex justify-content-center mb-3" data-payment="OTO-DriveCare-{{ req.pk }}-{{ req.total_fare }}"></div>
+                    <label class="btn btn-outline-secondary mb-3">
+                        Open camera to scan payment QR
+                        <input type="file" accept="image/*" capture="environment" class="d-none">
+                    </label>
+                    {% if user.is_rider %}
+                    <form method="post" action="{% url 'emergency:confirm_online_paid' req.pk %}" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100">Payment Complete</button>
+                    </form>
+                    {% else %}
+                    <p class="small text-muted">After the rider confirms payment, you will return to Home automatically.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    const qrTarget = document.getElementById('paymentQr');
+    if (qrTarget && typeof QRCode !== 'undefined') {
+        new QRCode(qrTarget, {text: qrTarget.dataset.payment, width: 220, height: 220});
+    }
+    {% if not user.is_rider %}
+    setInterval(function () {
+        fetch('{% url "emergency:live_tracking" req.pk %}')
+            .then(response => response.json())
+            .then(data => { if (data.payment_completed) window.location.href = '{% url "home" %}'; })
+            .catch(() => {});
+    }, 3000);
+    {% endif %}
+</script>
+{% endblock %}

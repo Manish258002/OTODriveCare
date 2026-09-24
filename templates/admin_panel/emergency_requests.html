@@ -1,0 +1,49 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h4 class="fw-bold mb-0">Live Requests</h4>
+        <p class="text-muted mb-0">View-only. Use History for completed rides.</p>
+    </div>
+    <form method="get" class="d-flex align-items-center gap-2">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-success">Filter</button>
+    </form>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Provider</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Requested</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in requests %}
+            <tr>
+                <td>#{{ item.pk }}</td>
+                <td>{{ item.user.username }}</td>
+                <td>{% if item.provider %}{{ item.provider.shop_name }}{% else %}Unassigned{% endif %}</td>
+                <td>{{ item.get_service_type_display }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.request_time|date:'M d, Y H:i' }}</td>
+                <td><a href="{% url 'admin_panel:emergency_detail' item.pk %}" class="btn btn-sm btn-outline-success">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-muted">No requests found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

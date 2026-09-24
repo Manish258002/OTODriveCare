@@ -1,0 +1,26 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<h4 class="fw-bold">Complaints</h4>
+<div class="table-responsive">
+    <table class="table">
+        <thead class="table-light">
+            <tr><th>User</th><th>Role</th><th>Subject</th><th>Status</th><th>Date</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for item in complaints %}
+            <tr>
+                <td>{{ item.user.username }}</td>
+                <td>{{ item.get_role_display }}</td>
+                <td>{{ item.subject }}</td>
+                <td>{% if item.admin_reply %}Replied{% else %}Open{% endif %}</td>
+                <td>{{ item.created_at|date:'d M Y' }}</td>
+                <td><a class="btn btn-sm btn-success" href="{% url 'admin_panel:complaint_detail' item.pk %}">Open</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No complaints.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

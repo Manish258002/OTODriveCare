@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Rider Dashboard - OTO Drive Care{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Rider Panel</h3>
+            <p class="text-muted mb-0">{% if user.on_duty %}You are on duty. Allow location access.{% else %}Turn On Duty to receive jobs.{% endif %}</p>
+        </div>
+        <form method="post" action="{% url 'accounts:rider_toggle_duty' %}">
+            {% csrf_token %}
+            <button class="duty-button {% if user.on_duty %}on{% else %}off{% endif %}">
+                {% if user.on_duty %}On Duty{% else %}Off Duty{% endif %}
+            </button>
+        </form>
+    </div>
+
+    {% if active_rides %}
+    <h5 class="fw-bold mb-3">Active Ride</h5>
+    <div class="row g-3 mb-4">
+        {% for req in active_rides %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold">#{{ req.pk }} • {{ req.get_service_type_display }}</h6>
+                    <p class="mb-1">{{ req.from_location }} → {{ req.to_location }}</p>
+                    <p class="mb-2">Fare: ₹{{ req.total_fare }}</p>
+                    {% if not req.code_verified %}
+                    <form method="post" action="{% url 'accounts:rider_verify_code' req.pk %}" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <input name="confirmation_code" class="form-control" placeholder="4-digit code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
+                        <button class="btn btn-success">Verify</button>
+                    </form>
+                    {% else %}
+                    <a href="{% url 'emergency:track_request' req.pk %}" class="btn btn-success btn-sm">Open Map</a>
+                    <a href="{% url 'emergency:complete_request' req.pk %}" class="btn btn-outline-success btn-sm">Finish Ride</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h5 class="fw-bold mb-3">Incoming Requests</h5>
+    {% if requests %}
+    <div class="row g-3">
+        {% for req in requests %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold">Request #{{ req.pk }}</h6>
+                        <span class="badge bg-warning text-dark">{{ req.status }}</span>
+                    </div>
+                    <p class="mb-1">User: {{ req.user.username }}</p>
+                    <p class="mb-1">Service: {{ req.get_service_type_display }}</p>
+                    <p class="mb-1">{{ req.from_location|default:'Pickup' }} → {{ req.to_location|default:'Drop' }}</p>
+                    <p class="mb-2">Fare: ₹{{ req.total_fare }}</p>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'accounts:rider_accept_request' req.pk %}" class="btn btn-success btn-sm">Accept</a>
+                        <a href="{% url 'accounts:rider_decline_request' req.pk %}" class="btn btn-outline-danger btn-sm">Decline</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-inbox fa-3x mb-3"></i>
+        <h5>No incoming service notifications</h5>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function sendRiderLocation(position) {
+        const csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        {% for req in active_rides %}
+        fetch('{% url "emergency:update_rider_location" req.pk %}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken ? csrfToken.split('=')[1] : ''},
+            body: new URLSearchParams({latitude: position.coords.latitude, longitude: position.coords.longitude})
+        });
+        {% endfor %}
+    }
+    if (navigator.geolocation && {{ user.on_duty|yesno:"true,false" }}) {
+        navigator.geolocation.getCurrentPosition(sendRiderLocation, function() {
+            alert('Please allow location permission while On Duty.');
+        }, {enableHighAccuracy: true});
+    }
+    setInterval(function(){ window.location.reload(); }, 12000);
+</script>
+{% endblock %}

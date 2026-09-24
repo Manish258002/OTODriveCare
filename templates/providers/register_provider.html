@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Register Your Shop - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow p-4">
+                <div class="text-center mb-4">
+                    <i class="fas fa-store fa-3x text-warning mb-2"></i>
+                    <h3 class="fw-bold">Register Your Shop</h3>
+                    <p class="text-muted">Join OTO DriveCare as a service provider. Your listing will go live after admin verification.</p>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'address' or field.name == 'shop_image' %}col-12{% else %}col-md-6{% endif %}">
+                            {% if field.field.widget.input_type != 'hidden' %}
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {% endif %}
+                            {{ field }}
+                            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 mb-3">
+                        <button type="button" id="getLocation" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-location-crosshairs me-2"></i>Auto-detect Shop Location
+                        </button>
+                        <small class="text-muted">Or enter latitude/longitude manually above</small>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold py-2 mt-2">
+                        <i class="fas fa-paper-plane me-2"></i>Submit for Verification
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('getLocation').addEventListener('click', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            document.getElementById('id_latitude').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('id_longitude').value = pos.coords.longitude.toFixed(6);
+            this.innerHTML = '<i class="fas fa-check-circle me-2 text-success"></i>Location Detected!';
+        }.bind(this));
+    }
+});
+</script>
+{% endblock %}

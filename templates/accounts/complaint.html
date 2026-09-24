@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Complaint{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow p-4">
+                <h4 class="fw-bold">Submit Complaint</h4>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                    <button class="btn btn-success w-100">Send</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow p-4">
+                <h4 class="fw-bold">My Complaints</h4>
+                {% for item in complaints %}
+                <div class="border rounded p-3 mb-3">
+                    <strong>{{ item.subject }}</strong>
+                    <p class="mb-1">{{ item.message }}</p>
+                    <small class="text-muted">{{ item.created_at|date:"d M Y" }}</small>
+                    {% if item.admin_reply %}
+                    <div class="alert alert-success mt-2 mb-0"><strong>Admin reply:</strong> {{ item.admin_reply }}</div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted">No complaints yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

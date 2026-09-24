@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Book a Service - OTO Drive Care{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="container mb-3">
+        <h3 class="fw-bold">Select a roadside service</h3>
+        <p class="text-muted mb-0">Open the map, choose towing, battery, tire, fuel, oil change or jump start, then find a rider.</p>
+        <form method="get" class="row g-2 mt-3">
+            <div class="col-md-5">
+                <input type="text" id="fromInput" name="from_location" class="form-control" value="{{ from_location }}" placeholder="Pickup Location" required>
+            </div>
+            <div class="col-md-5">
+                <input type="text" id="toInput" name="to_location" class="form-control" value="{{ to_location }}" placeholder="Drop Location" required>
+            </div>
+            <input type="hidden" id="searchLat" name="latitude" value="{{ latitude }}">
+            <input type="hidden" id="searchLng" name="longitude" value="{{ longitude }}">
+            <input type="hidden" id="searchDlat" name="destination_latitude" value="{{ destination_latitude }}">
+            <input type="hidden" id="searchDlng" name="destination_longitude" value="{{ destination_longitude }}">
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-success">Update Map</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-0">
+        <div class="col-lg-7">
+            <div id="map" class="service-map" style="height:70vh; min-height:420px; width:100%;"></div>
+            <p id="map-status" class="text-muted small text-center mt-2 mb-0">
+                Click the map to select pickup and drop locations.
+            </p>
+        </div>
+        <div class="col-lg-5">
+            <div class="p-3">
+                {% if not user.is_authenticated %}
+                <div class="alert alert-warning">Please <a href="{% url 'accounts:login' %}">login</a> or <a href="{% url 'accounts:register' %}">register</a> to book a rider.</div>
+                {% endif %}
+                {% for item in catalog %}
+                <form method="post" action="{% url 'emergency:book_service' %}" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="service_type" value="{{ item.key }}">
+                    <input type="hidden" name="from_location" class="from-copy" value="{{ from_location }}">
+                    <input type="hidden" name="to_location" class="to-copy" value="{{ to_location }}">
+                    <input type="hidden" name="latitude" class="lat-copy" value="{{ latitude|default:'0' }}">
+                    <input type="hidden" name="longitude" class="lng-copy" value="{{ longitude|default:'0' }}">
+                    <input type="hidden" name="destination_latitude" class="dlat-copy" value="{{ destination_latitude|default:'0' }}">
+                    <input type="hidden" name="destination_longitude" class="dlng-copy" value="{{ destination_longitude|default:'0' }}">
+                    <input type="hidden" name="vehicle_type" value="car">
+                    <input type="hidden" name="description" value="{{ item.name }} requested for damaged vehicle">
+                    <div class="card service-card shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="fw-bold mb-1"><i class="fas {{ item.icon }} text-{{ item.color }} me-2"></i>{{ item.name }}</h6>
+                                <p class="small text-muted mb-0">{{ item.desc }}</p>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-success">₹{{ item.price }}</div>
+                                {% if user.is_authenticated %}
+                                <button type="submit" class="btn btn-sm btn-success mt-2">Find Rider</button>
+                                {% else %}
+                                <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-success mt-2">Login to Book</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const mapElement = document.getElementById('map');
+    if (!mapElement || typeof L === 'undefined') return;
+
+    const serviceMap = L.map(mapElement).setView([20.5937, 78.9629], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(serviceMap);
+    let pickupMarker;
+    let dropMarker;
+    let selectingPickup = true;
+
+    const existingPickup = [Number('{{ latitude|default:"0" }}'), Number('{{ longitude|default:"0" }}')];
+    const existingDrop = [Number('{{ destination_latitude|default:"0" }}'), Number('{{ destination_longitude|default:"0" }}')];
+    function bindPickupMarker(marker) {
+        marker.on('dragend', function (event) {
+            const point = event.target.getLatLng();
+            fillCoords(point.lat, point.lng, dropMarker ? dropMarker.getLatLng().lat : point.lat, dropMarker ? dropMarker.getLatLng().lng : point.lng);
+        });
+    }
+    function bindDropMarker(marker) {
+        marker.on('dragend', function (event) {
+            const point = event.target.getLatLng();
+            fillCoords(pickupMarker ? pickupMarker.getLatLng().lat : point.lat, pickupMarker ? pickupMarker.getLatLng().lng : point.lng, point.lat, point.lng);
+        });
+    }
+    if (existingPickup[0] && existingPickup[1]) {
+        pickupMarker = L.marker(existingPickup, {draggable: true}).addTo(serviceMap).bindPopup('Pickup').openPopup();
+        bindPickupMarker(pickupMarker);
+        serviceMap.setView(existingPickup, 13);
+        selectingPickup = false;
+    }
+    if (existingDrop[0] && existingDrop[1]) {
+        dropMarker = L.marker(existingDrop, {draggable: true}).addTo(serviceMap).bindPopup('Drop').openPopup();
+        bindDropMarker(dropMarker);
+        serviceMap.fitBounds([existingPickup, existingDrop], {padding: [30, 30]});
+        selectingPickup = true;
+    }
+
+    function fillCoords(lat, lng, destLat, destLng) {
+        document.querySelectorAll('.lat-copy').forEach(el => el.value = lat);
+        document.querySelectorAll('.lng-copy').forEach(el => el.value = lng);
+        document.querySelectorAll('.dlat-copy').forEach(el => el.value = destLat || lat);
+        document.querySelectorAll('.dlng-copy').forEach(el => el.value = destLng || lng);
+        document.querySelectorAll('.from-copy').forEach(el => el.value = document.getElementById('fromInput').value);
+        document.querySelectorAll('.to-copy').forEach(el => el.value = document.getElementById('toInput').value);
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            serviceMap.setView([lat, lng], 13);
+            pickupMarker = L.marker([lat, lng], {draggable: true}).addTo(serviceMap).bindPopup('Pickup').openPopup();
+            bindPickupMarker(pickupMarker);
+            if (!existingPickup[0]) fillCoords(lat, lng, lat, lng);
+        }, function () {
+            document.getElementById('map-status').textContent =
+                'Location permission was not granted. Click the map to set pickup and drop points.';
+        });
+    }
+
+    serviceMap.on('click', function (event) {
+        const point = event.latlng;
+        if (selectingPickup) {
+            if (pickupMarker) serviceMap.removeLayer(pickupMarker);
+            pickupMarker = L.marker(point, {draggable: true}).addTo(serviceMap).bindPopup('Pickup').openPopup();
+            selectingPickup = false;
+            document.getElementById('map-status').textContent = 'Pickup selected. Click again to select drop location.';
+            fillCoords(point.lat, point.lng, point.lat, point.lng);
+        } else {
+            if (dropMarker) serviceMap.removeLayer(dropMarker);
+            dropMarker = L.marker(point, {draggable: true}).addTo(serviceMap).bindPopup('Drop').openPopup();
+            bindDropMarker(dropMarker);
+            selectingPickup = true;
+            document.getElementById('map-status').textContent = 'Pickup and drop locations selected.';
+            fillCoords(pickupMarker ? pickupMarker.getLatLng().lat : point.lat, pickupMarker ? pickupMarker.getLatLng().lng : point.lng, point.lat, point.lng);
+        }
+    });
+
+    window.setTimeout(function() { serviceMap.invalidateSize(); }, 150);
+})();
+</script>
+{% endblock %}

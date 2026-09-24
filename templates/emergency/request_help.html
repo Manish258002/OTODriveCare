@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Request Emergency Help - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow p-4">
+                <div class="text-center mb-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-2"></i>
+                    <h3 class="fw-bold">Emergency Help Request</h3>
+                    <p class="text-muted">Choose the service you need and we'll match the nearest provider.</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Select service</label>
+                    <div class="row g-2 service-option-grid">
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="tire">
+                                <i class="fas fa-circle-dot text-primary me-2"></i>Tire
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="towing">
+                                <i class="fas fa-truck-pickup text-danger me-2"></i>Towing
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="battery">
+                                <i class="fas fa-battery-three-quarters text-warning me-2"></i>Battery
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="fuel">
+                                <i class="fas fa-gas-pump text-success me-2"></i>Fuel
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="oil_change">
+                                <i class="fas fa-oil-can text-info me-2"></i>Oil Change
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button type="button" class="service-option btn btn-light w-100 text-start" data-value="jump_start">
+                                <i class="fas fa-bolt text-warning me-2"></i>Jump Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        {% if field.field.widget.input_type != 'hidden' %}
+                        <label class="form-label fw-semibold">{{ field.label }}</label>
+                        {% endif %}
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <!-- Location Detection -->
+                    <div class="mb-3">
+                        <button type="button" id="getLocation" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-location-crosshairs me-2"></i>Detect My Location
+                        </button>
+                        <div id="locationStatus" class="mt-2 text-muted small text-center"></div>
+                    </div>
+
+                    <div id="map-preview" style="height:250px; min-height:250px; border-radius:10px;" class="mb-3 shadow-sm"></div>
+
+                    <button type="submit" class="btn btn-danger w-100 fw-bold py-2">
+                        <i class="fas fa-paper-plane me-2"></i>Send Emergency Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map-preview {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        z-index: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let map, marker;
+const defaultLocation = [20.5937, 78.9629];
+
+function initializeMap(lat, lng, zoom) {
+    const mapDiv = document.getElementById('map-preview');
+    if (!mapDiv || typeof L === 'undefined') return;
+
+    if (!map) {
+        map = L.map(mapDiv).setView([lat, lng], zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        marker = L.marker([lat, lng]).addTo(map).bindPopup('Your pickup location');
+    } else {
+        map.setView([lat, lng], zoom);
+        marker.setLatLng([lat, lng]);
+    }
+    window.setTimeout(function() { map.invalidateSize(); }, 100);
+}
+
+const serviceSelect = document.getElementById('id_service_type');
+const serviceButtons = document.querySelectorAll('.service-option');
+
+function setSelectedService(value) {
+    if (!serviceSelect || !value) return;
+    serviceSelect.value = value;
+    serviceButtons.forEach(button => {
+        const active = button.dataset.value === value;
+        button.classList.toggle('btn-warning', active);
+        button.classList.toggle('btn-light', !active);
+        button.classList.toggle('text-dark', active);
+        button.classList.toggle('border-warning', active);
+    });
+}
+
+if (serviceSelect) {
+    serviceSelect.addEventListener('change', function() {
+        setSelectedService(this.value);
+    });
+    setSelectedService(serviceSelect.value || 'tire');
+}
+
+serviceButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        setSelectedService(this.dataset.value);
+    });
+});
+
+document.getElementById('getLocation').addEventListener('click', function() {
+    const status = document.getElementById('locationStatus');
+    status.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Detecting location...';
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            document.getElementById('id_latitude').value = lat;
+            document.getElementById('id_longitude').value = lng;
+            status.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location detected!</span>';
+
+            initializeMap(lat, lng, 15);
+            marker.openPopup();
+        }, function() {
+            status.innerHTML = '<span class="text-danger">Location access denied. Please enter manually.</span>';
+            initializeMap(defaultLocation[0], defaultLocation[1], 5);
+        });
+    }
+});
+
+initializeMap(defaultLocation[0], defaultLocation[1], 5);
+</script>
+{% endblock %}

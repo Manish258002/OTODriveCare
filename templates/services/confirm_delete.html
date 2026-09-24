@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Delete Service - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card border-0 shadow p-4 text-center">
+                <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                <h4 class="fw-bold">Delete Service?</h4>
+                <p class="text-muted">Are you sure you want to delete <strong>{{ service.service_name }}</strong>? This action cannot be undone.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 justify-content-center mt-3">
+                        <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
+                        <a href="{% url 'providers:provider_dashboard' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

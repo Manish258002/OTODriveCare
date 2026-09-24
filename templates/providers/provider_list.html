@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Service Providers - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h3 class="fw-bold mb-4"><i class="fas fa-store me-2 text-warning"></i>Verified Service Providers</h3>
+    <div class="row g-4">
+        {% for provider in providers %}
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                {% if provider.shop_image %}
+                <img src="{{ provider.shop_image.url }}" class="card-img-top" style="height:180px;object-fit:cover;">
+                {% else %}
+                <div class="bg-light text-center py-4" style="height:180px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-store fa-4x text-secondary"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h5 class="fw-bold mb-0">{{ provider.shop_name }}</h5>
+                        <span class="text-warning fw-bold"><i class="fas fa-star"></i> {{ provider.rating|floatformat:1 }}</span>
+                    </div>
+                    <p class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1 text-danger"></i>{{ provider.address|truncatechars:60 }}</p>
+                    <p class="text-muted small mb-3"><i class="fas fa-clock me-1"></i>{{ provider.opening_time }} – {{ provider.closing_time }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge {% if provider.is_available %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if provider.is_available %}Available{% else %}Busy{% endif %}
+                        </span>
+                        <a href="{% url 'providers:provider_detail' provider.pk %}" class="btn btn-warning btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fas fa-store-slash fa-4x mb-3"></i>
+            <h5>No providers available yet</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Provider Dashboard - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold">{{ provider.shop_name }} 🔧</h2>
+            <p class="text-muted">
+                <i class="fas fa-map-marker-alt me-1 text-danger"></i>{{ provider.address }}
+                <span class="ms-3 badge {% if provider.verified %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                    {% if provider.verified %}✔ Verified{% else %}Pending Verification{% endif %}
+                </span>
+            </p>
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <a href="{% url 'providers:edit_provider' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-edit me-1"></i>Edit Shop
+            </a>
+            <a href="{% url 'services:add_service' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-plus me-1"></i>Add Service
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 bg-warning bg-opacity-10">
+                <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                <h4 class="fw-bold">{{ provider.rating|floatformat:1 }}</h4>
+                <small class="text-muted">Average Rating</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 bg-primary bg-opacity-10">
+                <i class="fas fa-tools fa-2x text-primary mb-2"></i>
+                <h4 class="fw-bold">{{ services.count }}</h4>
+                <small class="text-muted">Services Listed</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 bg-danger bg-opacity-10">
+                <i class="fas fa-bell fa-2x text-danger mb-2"></i>
+                <h4 class="fw-bold">{{ requests|length }}</h4>
+                <small class="text-muted">Total Requests</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3 {% if provider.is_available %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10">
+                <i class="fas fa-toggle-on fa-2x {% if provider.is_available %}text-success{% else %}text-secondary{% endif %} mb-2"></i>
+                <h4 class="fw-bold">{% if provider.is_available %}Open{% else %}Closed{% endif %}</h4>
+                <small class="text-muted">Current Status</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Incoming Requests -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-bicycle me-2 text-danger"></i>Rider Panel - Incoming Requests
+                </div>
+                <div class="card-body p-0">
+                    {% if requests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th><th>User</th><th>Vehicle</th><th>Status</th><th>Time</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in requests %}
+                                <tr>
+                                    <td class="fw-bold">{{ req.id }}</td>
+                                    <td>{{ req.user.username }}</td>
+                                    <td>{{ req.get_vehicle_type_display }}</td>
+                                    <td>
+                                        <span class="badge {% if req.status == 'Completed' %}bg-success{% elif req.status == 'Accepted' or req.status == 'On the way' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ req.status }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ req.request_time|date:"d M, H:i" }}</td>
+                                    <td>
+                                        {% if req.status == 'Pending' %}
+                                        <a href="{% url 'emergency:accept_request' req.pk %}" class="btn btn-success btn-sm">Accept</a>
+                                        {% elif req.status == 'Accepted' %}
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'emergency:start_ride' req.pk %}" class="btn btn-primary btn-sm">Start Ride</a>
+                                            <a href="{% url 'emergency:complete_request' req.pk %}" class="btn btn-dark btn-sm">Finish</a>
+                                        </div>
+                                        {% elif req.status == 'On the way' %}
+                                        <a href="{% url 'emergency:complete_request' req.pk %}" class="btn btn-primary btn-sm">Finish Ride</a>
+                                        {% else %}
+                                        <span class="text-muted small">Closed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No requests yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Panel -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="fas fa-wrench me-2 text-warning"></i>My Services</span>
+                    <a href="{% url 'services:add_service' %}" class="btn btn-warning btn-sm">+ Add</a>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for service in services %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold">{{ service.service_name }}</span><br>
+                            <small class="text-success fw-bold">₹{{ service.price }}</small>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'services:edit_service' service.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'services:delete_service' service.pk %}" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4">
+                        No services added yet.
+                        <br><a href="{% url 'services:add_service' %}" class="btn btn-warning btn-sm mt-2">Add Service</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

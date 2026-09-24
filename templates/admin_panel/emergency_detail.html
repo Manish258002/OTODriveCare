@@ -1,0 +1,37 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<div class="mb-3">
+    <h4 class="fw-bold">Request #{{ req.pk }}</h4>
+    <p class="text-muted">Read-only history. This record cannot be edited, deleted or removed.</p>
+</div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm p-3">
+            <h6 class="text-muted">Customer</h6>
+            <p><strong>{{ req.user.username }}</strong></p>
+            <p>{{ req.user.email }}</p>
+            <p>{{ req.user.phone|default:'-' }}</p>
+            <hr>
+            <h6 class="text-muted">Service Provider</h6>
+            {% if req.provider %}
+            <p><strong>{{ req.provider.shop_name }}</strong></p>
+            <p>{{ req.provider.phone }}</p>
+            {% else %}
+            <p>Unassigned</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm p-3">
+            <p><strong>Service:</strong> {{ req.get_service_type_display }}</p>
+            <p><strong>Status:</strong> {{ req.status }}</p>
+            <p><strong>From → To:</strong> {{ req.from_location }} → {{ req.to_location }}</p>
+            <p><strong>Fare:</strong> ₹{{ req.total_fare }}</p>
+            <p><strong>Payment:</strong> {{ req.payment_method }}</p>
+            <p><strong>Code:</strong> {{ req.confirmation_code|default:'-' }}</p>
+            <p><strong>Requested:</strong> {{ req.request_time|date:'M d, Y H:i' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

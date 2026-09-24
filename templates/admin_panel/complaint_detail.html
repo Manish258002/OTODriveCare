@@ -1,0 +1,15 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<h4 class="fw-bold">{{ complaint.subject }}</h4>
+<p><strong>{{ complaint.user.username }}</strong> ({{ complaint.get_role_display }})</p>
+<p>{{ complaint.message }}</p>
+{% if complaint.admin_reply %}
+<div class="alert alert-success"><strong>Reply:</strong> {{ complaint.admin_reply }}</div>
+{% endif %}
+<form method="post">
+    {% csrf_token %}
+    <textarea name="admin_reply" class="form-control mb-3" rows="4" placeholder="Write a reply">{{ complaint.admin_reply }}</textarea>
+    <button class="btn btn-success">Send Reply</button>
+</form>
+{% endblock %}

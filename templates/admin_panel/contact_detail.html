@@ -1,0 +1,36 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm p-3">
+            <h5 class="fw-bold mb-3">Customer Message</h5>
+            <p><strong>Name:</strong> {{ contact.name }}</p>
+            <p><strong>Email:</strong> {{ contact.email }}</p>
+            <p><strong>Phone:</strong> {{ contact.phone|default:'-' }}</p>
+            <p><strong>Submitted:</strong> {{ contact.created_at|date:'M d, Y H:i' }}</p>
+            <hr>
+            <p class="text-muted">{{ contact.message }}</p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm p-3">
+            <h5 class="fw-bold mb-3">Reply to Customer</h5>
+            <form method="post">
+                {% csrf_token %}
+                <textarea name="reply_message" class="form-control" rows="6" placeholder="Write your reply here...">{{ contact.reply_message }}</textarea>
+                <button class="btn btn-warning mt-3">Send Reply</button>
+            </form>
+            {% if contact.reply_message %}
+            <div class="alert alert-info mt-3 mb-0">
+                <strong>Last reply:</strong><br>
+                {{ contact.reply_message }}
+                {% if contact.replied_at %}
+                <div class="small mt-2">Sent on {{ contact.replied_at|date:'M d, Y H:i' }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Edit Shop - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow p-4">
+                <h4 class="fw-bold mb-4"><i class="fas fa-edit me-2 text-warning"></i>Edit Shop Details</h4>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'address' or field.name == 'shop_image' %}col-12{% else %}col-md-6{% endif %}">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-warning fw-bold flex-grow-1">Save Changes</button>
+                        <a href="{% url 'providers:provider_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

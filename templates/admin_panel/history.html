@@ -1,0 +1,36 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block admin_content %}
+<h4 class="fw-bold">Ride History</h4>
+<p class="text-muted">User and service provider history is view-only. No edit, delete or remove.</p>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Provider</th>
+                <th>Service</th>
+                <th>Fare</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in requests %}
+            <tr>
+                <td><a href="{% url 'admin_panel:emergency_detail' item.pk %}">{{ item.pk }}</a></td>
+                <td>{{ item.user.username }}</td>
+                <td>{{ item.provider.shop_name|default:'-' }}</td>
+                <td>{{ item.get_service_type_display }}</td>
+                <td>₹{{ item.total_fare }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.request_time|date:'d M Y, H:i' }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-muted">No history yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

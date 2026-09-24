@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}{{ provider.shop_name }} - OTO DriveCare{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Left: Provider Info -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm overflow-hidden">
+                {% if provider.shop_image %}
+                <img src="{{ provider.shop_image.url }}" class="card-img-top" style="height:250px;object-fit:cover;">
+                {% else %}
+                <div class="bg-light text-center" style="height:200px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-store fa-5x text-secondary"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h4 class="fw-bold mb-0">{{ provider.shop_name }}</h4>
+                        <span class="text-warning fw-bold fs-5"><i class="fas fa-star"></i> {{ provider.rating|floatformat:1 }}</span>
+                    </div>
+                    <p class="text-muted"><i class="fas fa-map-marker-alt me-2 text-danger"></i>{{ provider.address }}</p>
+                    <p class="text-muted"><i class="fas fa-phone me-2 text-success"></i>{{ provider.phone }}</p>
+                    <p class="text-muted"><i class="fas fa-clock me-2 text-info"></i>{{ provider.opening_time }} – {{ provider.closing_time }}</p>
+                    <div class="d-flex gap-2 mt-3">
+                        <span class="badge {% if provider.verified %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                            {% if provider.verified %}✔ Verified{% else %}Pending{% endif %}
+                        </span>
+                        <span class="badge {% if provider.is_available %}bg-primary{% else %}bg-secondary{% endif %}">
+                            {% if provider.is_available %}Available Now{% else %}Currently Busy{% endif %}
+                        </span>
+                    </div>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'emergency:request_help' %}" class="btn btn-danger w-100 mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Request Emergency Help
+                    </a>
+                    <a href="{% url 'reviews:add_review' provider.pk %}" class="btn btn-outline-warning w-100 mt-2">
+                        <i class="fas fa-star me-2"></i>Write a Review
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Map -->
+            {% if provider.latitude and provider.longitude %}
+            <div id="providerMap" style="height:220px;border-radius:10px;" class="mt-3 shadow-sm"></div>
+            {% endif %}
+        </div>
+
+        <!-- Right: Services & Reviews -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-wrench me-2 text-warning"></i>Services Offered
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for service in services %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold">{{ service.service_name }}</span>
+                            {% if service.description %}
+                            <br><small class="text-muted">{{ service.description }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="text-success fw-bold">₹{{ service.price }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted py-3">No services listed yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="fas fa-comments me-2 text-primary"></i>Customer Reviews
+                </div>
+                <div class="card-body">
+                    {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong>{{ review.user.get_full_name|default:review.user.username }}</strong>
+                            <span class="text-warning">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}<i class="fas fa-star"></i>{% else %}<i class="far fa-star"></i>{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <p class="mb-0 text-muted">{{ review.review }}</p>
+                        <small class="text-muted">{{ review.date|date:"d M Y" }}</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-muted">No reviews yet. Be the first!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if provider.latitude and provider.longitude %}
+<script>
+    const map = L.map('providerMap').setView([{{ provider.latitude }}, {{ provider.longitude }}], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([{{ provider.latitude }}, {{ provider.longitude }}])
+        .addTo(map)
+        .bindPopup('<b>{{ provider.shop_name }}</b>')
+        .openPopup();
+</script>
+{% endif %}
+{% endblock %}

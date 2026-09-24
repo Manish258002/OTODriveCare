@@ -1,0 +1,157 @@
+﻿{% extends 'base.html' %}
+{% block title %}OTO Drive Care{% endblock %}
+
+{% block content %}
+<section class="hero-search text-center">
+    <div class="container py-5">
+        <h2 class="fw-bold mb-4">Plan Your Drive with OTO Care</h2>
+        <form id="homeLocationForm" class="row justify-content-center" method="get" action="{% url 'services:nearby_services' %}">
+            <div class="col-md-4 text-start">
+            <input id="homeFromInput" type="text" name="from_location" class="form-control mb-3" value="{{ from_location }}" placeholder="Pickup Location" required>
+            <input id="homeToInput" type="text" name="to_location" class="form-control mb-3" value="{{ to_location }}" placeholder="Drop Location" required>
+            <input id="homeLatitude" type="hidden" name="latitude" value="{{ latitude }}">
+            <input id="homeLongitude" type="hidden" name="longitude" value="{{ longitude }}">
+            <input id="homeDestinationLatitude" type="hidden" name="destination_latitude" value="{{ destination_latitude }}">
+            <input id="homeDestinationLongitude" type="hidden" name="destination_longitude" value="{{ destination_longitude }}">
+                <button type="submit" class="btn btn-success w-100">Find</button>
+            </div>
+        </form>
+        <p class="text-muted mt-4">Book towing, battery, tire, fuel, oil change or jump start for a damaged vehicle.</p>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <h3 class="text-center fw-bold mb-2">Find Your Location</h3>
+        <p class="text-center text-muted mb-4">Allow location access or click the map to choose your pickup point.</p>
+        <div id="home-map" class="home-map" style="height:460px; min-height:360px; width:100%;"></div>
+        <div id="home-map-status" class="text-center text-muted small mt-2"></div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <h3 class="text-center fw-bold mb-4">All Services</h3>
+        <div class="row g-3">
+            {% for item in catalog %}
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{% url 'services:nearby_services' %}?service_type={{ item.key }}" class="text-decoration-none text-dark">
+                    <div class="card service-card text-center h-100 shadow-sm">
+                        <div class="card-body py-4">
+                            <i class="fas {{ item.icon }} fa-2x text-{{ item.color }} mb-2"></i>
+                            <p class="mb-1 fw-semibold">{{ item.name }}</p>
+                            <small class="text-success">₹{{ item.price }}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const mapElement = document.getElementById('home-map');
+    if (!mapElement || typeof L === 'undefined') return;
+
+    const defaultCenter = [20.5937, 78.9629];
+    const homeMap = L.map(mapElement).setView(defaultCenter, 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(homeMap);
+
+    let pickupMarker;
+    let dropMarker;
+    let selectingPickup = true;
+    function setPickup(lat, lng, message) {
+        if (!pickupMarker) {
+            pickupMarker = L.marker([lat, lng], {draggable: true}).addTo(homeMap);
+            pickupMarker.on('dragend', function (event) {
+                const point = event.target.getLatLng();
+                setPickup(point.lat, point.lng, 'Pickup marker moved');
+            });
+        } else {
+            pickupMarker.setLatLng([lat, lng]);
+        }
+        pickupMarker.bindPopup('Pickup location').openPopup();
+        selectingPickup = false;
+        document.getElementById('home-map-status').textContent =
+            message + ': ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+        homeMap.setView([lat, lng], 14);
+    }
+
+    function setDrop(lat, lng, message) {
+        if (!dropMarker) {
+            dropMarker = L.marker([lat, lng], {draggable: true}).addTo(homeMap);
+            dropMarker.on('dragend', function (event) {
+                const point = event.target.getLatLng();
+                document.getElementById('homeDestinationLatitude').value = point.lat;
+                document.getElementById('homeDestinationLongitude').value = point.lng;
+            });
+        } else {
+            dropMarker.setLatLng([lat, lng]);
+        }
+        dropMarker.bindPopup('Drop location').openPopup();
+        document.getElementById('homeDestinationLatitude').value = lat;
+        document.getElementById('homeDestinationLongitude').value = lng;
+        document.getElementById('home-map-status').textContent = message;
+        selectingPickup = true;
+    }
+
+    homeMap.on('click', function (event) {
+        if (!selectingPickup) {
+            setDrop(event.latlng.lat, event.latlng.lng, 'Pickup and drop locations selected');
+        } else {
+            setPickup(event.latlng.lat, event.latlng.lng, 'Pickup selected. Click again for drop location');
+        }
+    });
+
+    document.getElementById('homeLocationForm').addEventListener('submit', async function (event) {
+        const from = document.getElementById('homeFromInput').value.trim();
+        const to = document.getElementById('homeToInput').value.trim();
+        if (document.getElementById('homeLatitude').value && document.getElementById('homeDestinationLatitude').value) return;
+        event.preventDefault();
+        const status = document.getElementById('home-map-status');
+        status.textContent = 'Finding both locations...';
+        try {
+            const find = async value => {
+                const response = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(value));
+                const results = await response.json();
+                if (!results.length) throw new Error('Location not found');
+                return results[0];
+            };
+            const pickup = await find(from);
+            const drop = await find(to);
+            document.getElementById('homeLatitude').value = pickup.lat;
+            document.getElementById('homeLongitude').value = pickup.lon;
+            document.getElementById('homeDestinationLatitude').value = drop.lat;
+            document.getElementById('homeDestinationLongitude').value = drop.lon;
+            setPickup(Number(pickup.lat), Number(pickup.lon), 'Pickup found: ' + from);
+            setDrop(Number(drop.lat), Number(drop.lon), 'Drop found: ' + to);
+            this.submit();
+        } catch (error) {
+            status.textContent = 'Location not found. Select pickup and drop points on the map.';
+        }
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                setPickup(position.coords.latitude, position.coords.longitude, 'Current location detected');
+            },
+            function () {
+                document.getElementById('home-map-status').textContent =
+                    'Location permission was not granted. Click the map to select pickup.';
+                window.setTimeout(function () { homeMap.invalidateSize(); }, 150);
+            }
+        );
+    }
+
+    window.setTimeout(function () { homeMap.invalidateSize(); }, 150);
+})();
+</script>
+{% endblock %}
